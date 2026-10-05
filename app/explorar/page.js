@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { ramos, catsDelRamo } from "../../lib/data";
 import Filters from "../components/Filters";
+import OverflowRail from "../components/OverflowRail";
 
 export default function ExplorarPage() {
   const [ramo, setRamo] = useState("todos");
@@ -19,18 +20,27 @@ export default function ExplorarPage() {
           {ramos.find((r) => r.id === ramo)?.detalle}
         </p>
       )}
-      <p className="meta">{lista.length} categorías</p>
-      <div className="grid">
+      <p className="meta" role="status" aria-live="polite" aria-atomic="true">
+        {lista.length} categorías
+      </p>
+      <OverflowRail
+        className="grid card-rail"
+        wrapperClassName="overflow-rail--cards"
+        role="region"
+        ariaLabel="Categorías de los ramos"
+        ariaRoleDescription="lista de categorías desplazable"
+        keyboardScroll
+      >
         {lista.map((c) => (
           <a className="card card-motion" key={c.id} href={`/categoria/${c.id}`}>
-            <div className="emoji">{c.emoji}</div>
+            <div className="emoji" aria-hidden="true">{c.emoji}</div>
             <h3>{c.nombre}</h3>
             <div className="meta">
               {c.mes} {c.anio}
             </div>
           </a>
         ))}
-      </div>
+      </OverflowRail>
     </main>
   );
 }

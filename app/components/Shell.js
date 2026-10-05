@@ -20,16 +20,17 @@ export default function Shell({ children }) {
 
   return (
     <div className="phone">
+      <a className="skip-link" href="#main-content">Saltar al contenido</a>
       <header className="appbar">
         <a className="brand" href="/">
-          <span className="brand-mark">CP</span>
+          <span className="brand-mark" aria-hidden="true">CP</span>
           <span>
             <b>ComparaProfeco</b>
             <small>App familiar</small>
           </span>
         </a>
       </header>
-      <div className="screen">{children}</div>
+      <div className="screen" id="main-content" tabIndex={-1}>{children}</div>
       <nav className="tabbar" aria-label="Navegación de la app">
         {TABS.map((t) => {
           const on =
@@ -37,8 +38,13 @@ export default function Shell({ children }) {
               ? path === "/"
               : path === t.href || path.startsWith(`${t.href}/`);
           return (
-            <a key={t.href} href={t.href} className={on ? "on" : ""}>
-              <span className="ticon">{t.icon}</span>
+            <a
+              key={t.href}
+              href={t.href}
+              className={on ? "on" : ""}
+              aria-current={on ? "page" : undefined}
+            >
+              <span className="ticon" aria-hidden="true">{t.icon}</span>
               {t.label}
             </a>
           );

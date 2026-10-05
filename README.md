@@ -5,6 +5,13 @@ No es un sitio oficial.
 
 Node.js: **24.x** (`engines` en package.json y `.nvmrc`).
 
+## Verificación
+
+```sh
+npm ci
+npm run check # npm audit + compilación de producción
+```
+
 ## Incluye
 
 - 6 ramos y catálogo 2024 + 2025 + 2026

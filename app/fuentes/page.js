@@ -1,9 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ramos } from "../../lib/data";
 import { pdfsFiltrados } from "../../lib/indexes";
+import Accordion from "../components/Accordion";
 import Filters from "../components/Filters";
+import OverflowRail from "../components/OverflowRail";
 
 export default function FuentesPage() {
   const [ramo, setRamo] = useState("todos");
@@ -21,11 +23,20 @@ export default function FuentesPage() {
         <p className="meta">{ramos.map((r) => r.nombre).join(" · ")}</p>
       </section>
       <Filters ramo={ramo} anio={anio} onRamo={setRamo} onAnio={setAnio} />
-      <p className="meta">{lista.length} documentos</p>
-      <div className="grid" style={{ marginTop: 18 }}>
+      <p className="meta" role="status" aria-live="polite" aria-atomic="true">
+        {lista.length} documentos
+      </p>
+      <OverflowRail
+        className="grid card-rail"
+        wrapperClassName="overflow-rail--cards"
+        role="region"
+        ariaLabel="Documentos oficiales de los estudios"
+        ariaRoleDescription="lista de documentos desplazable"
+        keyboardScroll
+      >
         {lista.map((c) => (
           <article className="card card-motion" key={c.id}>
-            <div className="emoji">{c.emoji}</div>
+            <div className="emoji" aria-hidden="true">{c.emoji}</div>
             <h3>{c.nombre}</h3>
             <div className="meta">
               {c.mes} {c.anio} · {c.ramoNombre}
@@ -40,12 +51,14 @@ export default function FuentesPage() {
             </div>
           </article>
         ))}
-      </div>
+      </OverflowRail>
       <div className="alert">
         Sitios oficiales: gob.mx/profeco y revistadelconsumidor.profeco.gob.mx.
         También se consulta datos.gob.mx y Open Food Facts, sin quitar las ligas que ya tenía la app.
       </div>
-      <DatosAbiertos />
+      <Accordion title="Datos abiertos (sin key)" initiallyOpen>
+        <DatosAbiertos />
+      </Accordion>
     </main>
   );
 }
@@ -53,40 +66,86 @@ export default function FuentesPage() {
 function DatosAbiertos() {
   const [rows, setRows] = useState(null);
   const [err, setErr] = useState("");
+  const [status, setStatus] = useState("idle");
+  const inFlight = useRef(false);
 
-  function load() {
+  async function load() {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setStatus("loading");
     setErr("");
-    fetch("/api/datos-abiertos?q=profeco&rows=6")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.error) setErr(d.error);
-        else setRows(d.datasets || []);
-      })
-      .catch(() => setErr("No se pudo cargar datos.gob.mx"));
+
+    try {
+      const response = await fetch("/api/datos-abiertos?q=profeco&rows=6");
+      const data = await response.json();
+      if (!response.ok || data.error) {
+        throw new Error(data.error || "No se pudo consultar datos.gob.mx");
+      }
+      setRows(data.datasets || []);
+      setStatus("success");
+    } catch (error) {
+      setErr(error instanceof Error ? error.message : "No se pudo cargar datos.gob.mx");
+      setStatus("error");
+    } finally {
+      inFlight.current = false;
+    }
   }
 
+  const buttonText = {
+    idle: "Consultar datos.gob.mx",
+    loading: "Consultando…",
+    success: "Consulta completada",
+    error: "Reintentar consulta"
+  }[status];
+
   return (
-    <section style={{ marginTop: 24 }}>
-      <h2>Datos abiertos (sin key)</h2>
-      <button className="btn btn-primary" type="button" onClick={load}>
-        Consultar datos.gob.mx
+    <div className="open-data-content">
+      <button
+        className={`btn btn-primary async-button async-button-${status}`}
+        type="button"
+        onClick={load}
+        disabled={status === "loading"}
+        aria-busy={status === "loading"}
+        data-state={status}
+      >
+        <span className="async-button-icon" aria-hidden="true">
+          {status === "loading" ? "" : status === "success" ? "✓" : status === "error" ? "!" : ""}
+        </span>
+        {buttonText}
       </button>
-      {err && <div className="alert">{err}</div>}
-      {rows && (
-        <div className="grid">
-          {rows.map((d) => (
-            <article className="card" key={d.name || d.title}>
-              <h3>{d.title}</h3>
-              <div className="meta">{d.organization}</div>
-              {d.url && (
-                <a className="btn btn-ghost" href={d.url} target="_blank" rel="noreferrer">
+      <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {status === "loading"
+          ? "Consultando datos abiertos."
+          : status === "success"
+            ? `${rows?.length || 0} conjuntos de datos cargados.`
+            : ""}
+      </p>
+      {err && <div className="alert" role="alert">{err}</div>}
+      {rows && rows.length === 0 && (
+        <p className="meta" role="status">No se encontraron conjuntos de datos.</p>
+      )}
+      {rows && rows.length > 0 && (
+        <OverflowRail
+          className="grid card-rail"
+          wrapperClassName="overflow-rail--cards"
+          role="region"
+          ariaLabel="Conjuntos de datos abiertos"
+          ariaRoleDescription="lista de conjuntos de datos desplazable"
+          keyboardScroll
+        >
+          {rows.map((dataset) => (
+            <article className="card card-motion" key={dataset.name || dataset.title}>
+              <h3>{dataset.title}</h3>
+              <div className="meta">{dataset.organization}</div>
+              {dataset.url && (
+                <a className="btn btn-ghost" href={dataset.url} target="_blank" rel="noreferrer">
                   Abrir dataset
                 </a>
               )}
             </article>
           ))}
-        </div>
+        </OverflowRail>
       )}
-    </section>
+    </div>
   );
 }
