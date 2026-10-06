@@ -23,8 +23,13 @@
   --dur-1: 140ms;   /* micro-respuestas (presionar) */
   --dur-2: 200ms;   /* transiciones y cruces de panel */
   --ease: cubic-bezier(0.2, 0.75, 0.25, 1);
-  --press-scale: 0.985;
-  --press-lift: -2px;
+  /* En reposo: ninguna superficie se mueve ni se encoge. */
+  --press-scale: 1;
+  --press-lift: 0px;
+  /* Respuesta al tocar (las usan :active y :hover, nunca el reposo). */
+  --press-scale-activo: 0.985;
+  --press-lift-activo: 1px;
+  --press-lift-hover: -2px;
   --press-shadow: 0 2px 5px rgba(28, 25, 23, 0.12);
   --tilt: 1.1deg;
   --motion: var(--dur-2) var(--ease);
@@ -615,8 +620,8 @@ textarea:focus-visible {
 
 .press-superficie:active,
 .card-motion:active {
-  --press-scale: 0.985;
-  --press-lift: 1px;
+  --press-scale: var(--press-scale-activo);
+  --press-lift: var(--press-lift-activo);
   box-shadow: var(--press-shadow);
 }
 
@@ -1123,7 +1128,7 @@ textarea:focus-visible {
 
   .press-superficie:hover,
   .card-motion:hover {
-    --press-lift: -2px;
+    --press-lift: var(--press-lift-hover);
     will-change: transform;
     border-color: #d9cfbe;
     box-shadow: var(--shadow-raised);
