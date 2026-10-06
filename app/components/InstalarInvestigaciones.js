@@ -12,6 +12,7 @@ import {
   tocaRevisar
 } from "../../lib/investigaciones-store";
 import AsyncButton from "./AsyncButton";
+import { anunciar } from "../../lib/anuncios";
 
 /**
  * Botón que baja e instala las investigaciones de precios más recientes de
@@ -95,6 +96,13 @@ export default function InstalarInvestigaciones() {
       if (!d.ok) throw new Error(d.error || "respuesta inválida");
       guardarMeta({ ultimaRevision: Date.now(), novedad: d.novedad ? { periodo: d.periodo, publicadoEn: d.publicadoEn, version: d.version } : null });
       setNovedad(d.novedad ? { periodo: d.periodo, publicadoEn: d.publicadoEn, version: d.version } : null);
+      if (forzar) {
+        anunciar(
+          d.novedad
+            ? { texto: `Hay investigaciones nuevas: ${d.periodo}. Toca el botón para instalarlas.`, tono: "info" }
+            : { texto: guardado ? `Ya tienes lo más reciente: ${guardado.fuente?.periodo}.` : "No hay investigaciones instaladas todavía.", tono: "exito", duracion: 4000 }
+        );
+      }
       setFase((f) => (f === "revisando" ? "listo" : f));
       setMensaje(
         d.novedad
@@ -169,6 +177,11 @@ export default function InstalarInvestigaciones() {
         `Listo: ${nuevo.fuente?.periodo} instalado · ${miles(nuevo.cobertura?.registrosProcesados)} precios · ` +
         `${nuevo.porCategoria?.length || 0} categorías · ${nuevo.porCadena?.length || 0} cadenas.`
       );
+      anunciar({
+        texto: `Listo: ${nuevo.fuente?.periodo} quedó guardado en este dispositivo.`,
+        tono: "exito",
+        duracion: 5000
+      });
     } catch (e) {
       clearInterval(tic);
       setFase("error");
