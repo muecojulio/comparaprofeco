@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { ramos } from "../../lib/data";
 import { pdfsFiltrados } from "../../lib/indexes";
 import Accordion from "../components/Accordion";
+import AsyncButton from "../components/AsyncButton";
 import InstalarInvestigaciones from "../components/InstalarInvestigaciones";
 import Filters from "../components/Filters";
 import OverflowRail from "../components/OverflowRail";
@@ -104,19 +105,9 @@ function DatosAbiertos() {
 
   return (
     <div className="open-data-content">
-      <button
-        className={`btn btn-primary async-button async-button-${status}`}
-        type="button"
-        onClick={load}
-        disabled={status === "loading"}
-        aria-busy={status === "loading"}
-        data-state={status}
-      >
-        <span className="async-button-icon" aria-hidden="true">
-          {status === "loading" ? "" : status === "success" ? "✓" : status === "error" ? "!" : ""}
-        </span>
+      <AsyncButton estado={status} onClick={load}>
         {buttonText}
-      </button>
+      </AsyncButton>
       <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
         {status === "loading"
           ? "Consultando datos abiertos."

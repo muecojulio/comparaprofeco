@@ -1,12 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { NIVELES, getCategoria, getRamo } from "../../../lib/data";
 import { productoDelDia } from "../../../lib/featured";
 import { claveDe, fechaTexto, guardarAnalizado, quitarAnalizado } from "../../../lib/analizados";
+import { anunciar } from "../../../lib/anuncios";
 import { useAnalizados } from "../../components/useAnalizados";
 import SegmentedTabs from "../../components/SegmentedTabs";
+import Superficie from "../../components/Superficie";
+import TabSwipePanel from "../../components/TabSwipePanel";
 
 function fotoUrl(cat, prod) {
   const prompt = `small product photo of ${prod.marca} ${prod.nombre} ${cat.nombre} Mexico supermarket package, studio light, centered, simple background`;
@@ -35,12 +38,7 @@ const evaluationTabs = [
   }))
 ];
 
-const INTERACTIVE_SELECTOR =
-  "button, a, input, select, textarea, [role='button'], [role='tab'], [contenteditable='true'], [data-no-swipe], iframe, canvas, [data-map], .map, .leaflet-container, .mapboxgl-map";
 
-function startsOnControl(target) {
-  return !(target instanceof Element) || Boolean(target.closest(INTERACTIVE_SELECTOR));
-}
 
 function ProductResults({ cat, tab, products }) {
   return (
@@ -58,7 +56,7 @@ function ProductResults({ cat, tab, products }) {
       )}
 
       {products.map((product) => (
-        <article className="prod" key={product.id}>
+        <Superficie as="article" className="prod" key={product.id}>
           <Thumb cat={cat} prod={product} />
           <div>
             <span className={`badge ${product.nivel}`}>{NIVELES[product.nivel].label}</span>
@@ -70,7 +68,7 @@ function ProductResults({ cat, tab, products }) {
             <div className="meta">{product.nombre}</div>
             <p>{product.hallazgo}</p>
           </div>
-        </article>
+        </Superficie>
       ))}
     </>
   );
@@ -80,18 +78,19 @@ export default function CategoriaPage() {
   const params = useParams();
   const cat = getCategoria(params.id);
   const [tab, setTab] = useState("todos");
-  const [panelDirection, setPanelDirection] = useState("forward");
-  const [exitingPanel, setExitingPanel] = useState(null);
   const tabGroupId = `evaluation-${useId().replace(/:/g, "")}`;
   const panelId = `${tabGroupId}-panel`;
-  const swipeStart = useRef(null);
-  const exitTimer = useRef(null);
 
-  const lista = useMemo(() => {
-    if (!cat) return [];
-    if (tab === "todos") return cat.productos;
-    return cat.productos.filter((product) => product.nivel === tab);
-  }, [cat, tab]);
+  // Productos de una pestaña concreta: lo usa el panel activo y también el que
+  // se está yendo (por eso es una función y no un valor único).
+  const productosDe = useCallback(
+    (cual) => {
+      if (!cat) return [];
+      if (cual === "todos") return cat.productos;
+      return cat.productos.filter((product) => product.nivel === cual);
+    },
+    [cat]
+  );
 
   const ramo = cat ? getRamo(cat.ramo) : null;
 
@@ -115,71 +114,6 @@ export default function CategoriaPage() {
     destacadoHoy && guardadosAqui.some((g) => claveDe(g) === claveDe(destacadoHoy))
   );
 
-  useEffect(
-    () => () => {
-      if (exitTimer.current) window.clearTimeout(exitTimer.current);
-    },
-    []
-  );
-
-  const selectTab = useCallback((nextTab) => {
-    const currentIndex = evaluationTabs.findIndex((item) => item.value === tab);
-    const nextIndex = evaluationTabs.findIndex((item) => item.value === nextTab);
-    if (nextIndex < 0 || nextTab === tab) return;
-
-    const direction = nextIndex >= currentIndex ? "forward" : "backward";
-    if (exitTimer.current) window.clearTimeout(exitTimer.current);
-    setPanelDirection(direction);
-    setExitingPanel({ tab, products: lista, direction });
-    setTab(nextTab);
-
-    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
-    if (reducedMotion) {
-      setExitingPanel(null);
-      exitTimer.current = null;
-      return;
-    }
-
-    exitTimer.current = window.setTimeout(() => {
-      setExitingPanel(null);
-      exitTimer.current = null;
-    }, 220);
-  }, [lista, tab]);
-
-  function handleTouchStart(event) {
-    if (event.touches.length !== 1 || startsOnControl(event.target)) {
-      swipeStart.current = null;
-      return;
-    }
-
-    const touch = event.touches[0];
-    swipeStart.current = {
-      x: touch.clientX,
-      y: touch.clientY,
-      time: Date.now()
-    };
-  }
-
-  function handleTouchEnd(event) {
-    const start = swipeStart.current;
-    swipeStart.current = null;
-    if (!start || event.changedTouches.length !== 1) return;
-
-    const touch = event.changedTouches[0];
-    const dx = touch.clientX - start.x;
-    const dy = touch.clientY - start.y;
-    const distanceX = Math.abs(dx);
-    const elapsed = Math.max(1, Date.now() - start.time);
-    const isHorizontal = distanceX > Math.abs(dy) * 1.2;
-    const hasEnoughTravel = distanceX >= 52 || (distanceX >= 28 && distanceX / elapsed >= 0.55);
-    if (!isHorizontal || !hasEnoughTravel) return;
-
-    const currentIndex = evaluationTabs.findIndex((item) => item.value === tab);
-    const nextIndex = currentIndex + (dx < 0 ? 1 : -1);
-    if (nextIndex >= 0 && nextIndex < evaluationTabs.length) {
-      selectTab(evaluationTabs[nextIndex].value);
-    }
-  }
 
   if (!cat) {
     return (
@@ -245,7 +179,15 @@ export default function CategoriaPage() {
                   <button
                     type="button"
                     className="btn btn-ghost guardado-quitar"
-                    onClick={() => quitarAnalizado(clave)}
+                    onClick={() => {
+                      quitarAnalizado(clave);
+                      anunciar({
+                        texto: `Quité “${g.producto?.marca || ""} · ${g.producto?.nombre || ""}”.`,
+                        tono: "info",
+                        etiquetaAccion: "Deshacer",
+                        onAccion: () => guardarAnalizado(g, { conservar: true })
+                      });
+                    }}
                     aria-label={`Quitar ${g.producto?.nombre} de tus analizados`}
                   >
                     Quitar
@@ -264,7 +206,10 @@ export default function CategoriaPage() {
           <button
             type="button"
             className="btn btn-ghost"
-            onClick={() => guardarAnalizado(destacadoHoy)}
+            onClick={() => {
+              guardarAnalizado(destacadoHoy);
+              anunciar({ texto: "Guardado en tus analizados.", tono: "exito", duracion: 4000 });
+            }}
             data-no-swipe
           >
             Guardarlo en mis analizados
@@ -275,50 +220,23 @@ export default function CategoriaPage() {
       <SegmentedTabs
         tabs={evaluationTabs}
         value={tab}
-        onChange={selectTab}
+        onChange={setTab}
         idBase={tabGroupId}
         panelId={panelId}
         ariaLabel="Filtrar productos por evaluación"
       />
 
-      <p className="swipe-hint" aria-hidden="true">
-        Desliza sobre los resultados para cambiar de filtro
-      </p>
-
-      <div className="tab-panels">
-        <section
-          key={tab}
-          className="tab-panel"
-          role="tabpanel"
-          id={panelId}
-          aria-labelledby={`${tabGroupId}-tab-${tab}`}
-          tabIndex={0}
-          data-direction={panelDirection}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
-          onTouchCancel={() => {
-            swipeStart.current = null;
-          }}
-        >
-          <ProductResults cat={cat} tab={tab} products={lista} />
-        </section>
-
-        {exitingPanel && (
-          <div
-            key={`exit-${exitingPanel.tab}`}
-            className="tab-panel tab-panel-exit"
-            aria-hidden="true"
-            inert
-            data-direction={exitingPanel.direction}
-          >
-            <ProductResults
-              cat={cat}
-              tab={exitingPanel.tab}
-              products={exitingPanel.products}
-            />
-          </div>
+      <TabSwipePanel
+        tabs={evaluationTabs}
+        value={tab}
+        onChange={setTab}
+        idBase={tabGroupId}
+        panelId={panelId}
+        pista="Desliza sobre los resultados para cambiar de filtro"
+        renderPanel={(cual) => (
+          <ProductResults cat={cat} tab={cual} products={productosDe(cual)} />
         )}
-      </div>
+      />
 
       <div className="alert">
         Las fotos son ilustrativas (no son el empaque oficial). La calificación se refiere al

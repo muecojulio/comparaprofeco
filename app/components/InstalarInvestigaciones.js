@@ -11,6 +11,7 @@ import {
   miles,
   tocaRevisar
 } from "../../lib/investigaciones-store";
+import AsyncButton from "./AsyncButton";
 
 /**
  * Botón que baja e instala las investigaciones de precios más recientes de
@@ -203,19 +204,15 @@ export default function InstalarInvestigaciones() {
         datos.gob.mx. Se guardan en tu celular y siguen ahí aunque cambie el mes o no haya internet.
       </p>
 
-      <button
-        className={`btn btn-primary async-button async-button-${estado}`}
-        type="button"
+      <AsyncButton
+        estado={estado}
         onClick={instalar}
-        disabled={ocupado}
-        aria-busy={ocupado}
-        data-state={estado}
+        vibrarEnExito
+        aria-label={etiqueta}
+        iconos={{ idle: novedad || !snapshot ? "↓" : "✓", loading: null, success: "✓", error: "!" }}
       >
-        <span className="async-button-icon" aria-hidden="true">
-          {ocupado ? "" : novedad ? "↓" : snapshot ? "✓" : "↓"}
-        </span>
         {etiqueta}
-      </button>
+      </AsyncButton>
 
       {ocupado && (
         <div className="progress" role="progressbar" aria-valuenow={progreso} aria-valuemin={0} aria-valuemax={100}>
@@ -280,9 +277,15 @@ export default function InstalarInvestigaciones() {
       {error && <div className="alert" role="alert">Detalle técnico: {error}</div>}
 
       <div className="pills" style={{ marginTop: 12 }}>
-        <button className="btn btn-ghost" type="button" onClick={() => revisar({ forzar: true })} disabled={ocupado}>
-          Revisar novedades
-        </button>
+        <AsyncButton
+          variante="ghost"
+          estado={fase === "revisando" ? "loading" : "idle"}
+          deshabilitado={ocupado}
+          onClick={() => revisar({ forzar: true })}
+          iconos={{ idle: "", loading: null }}
+        >
+          {fase === "revisando" ? "Revisando…" : "Revisar novedades"}
+        </AsyncButton>
         {snapshot && (
           <button className="btn btn-ghost" type="button" onClick={olvidar} disabled={ocupado}>
             Borrar del dispositivo

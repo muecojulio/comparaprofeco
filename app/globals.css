@@ -19,7 +19,15 @@
   --focus: #9a7400;
   --shadow: 0 10px 30px rgba(28, 25, 23, 0.08);
   --shadow-raised: 0 12px 28px rgba(28, 25, 23, 0.12);
-  --motion: 180ms cubic-bezier(0.2, 0.75, 0.25, 1);
+  /* Un solo lugar para ajustar el ritmo de todas las interacciones. */
+  --dur-1: 140ms;   /* micro-respuestas (presionar) */
+  --dur-2: 200ms;   /* transiciones y cruces de panel */
+  --ease: cubic-bezier(0.2, 0.75, 0.25, 1);
+  --press-scale: 0.985;
+  --press-lift: -2px;
+  --press-shadow: 0 2px 5px rgba(28, 25, 23, 0.12);
+  --tilt: 1.1deg;
+  --motion: var(--dur-2) var(--ease);
 }
 
 * {
@@ -177,9 +185,30 @@ input:focus:not(:focus-visible) {
   transition: color var(--motion), background-color var(--motion), transform var(--motion);
 }
 
+/* La píldora activa se dibuja una sola vez y se desliza a la sección elegida. */
+.tabbar-indicador {
+  position: absolute;
+  z-index: 0;
+  top: 6px;
+  bottom: calc(8px + env(safe-area-inset-bottom));
+  left: 0;
+  border-radius: 10px;
+  background: #edf4ef;
+  pointer-events: none;
+  transition: transform var(--dur-2) var(--ease), width var(--dur-2) var(--ease);
+}
+
+.tabbar a {
+  position: relative;
+  z-index: 1;
+}
+
 .tabbar a[aria-current="page"] {
   color: var(--green);
-  background: #edf4ef;
+}
+
+.tabbar a[aria-current="page"] .ticon {
+  transform: translateY(-1px) scale(1.08);
 }
 
 .ticon {
@@ -288,7 +317,25 @@ textarea {
   color: var(--ink);
   font-family: inherit;
   font-size: 16px;
+  touch-action: manipulation;
   transition: border-color var(--motion), box-shadow var(--motion), background-color var(--motion);
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  border-color: var(--line);
+  background: #f2efe7;
+  color: var(--muted);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+input[aria-invalid="true"],
+select[aria-invalid="true"],
+textarea[aria-invalid="true"] {
+  border-color: var(--bad);
+  box-shadow: 0 0 0 3px var(--bad-bg);
 }
 
 .search input {
@@ -409,7 +456,7 @@ textarea:focus-visible {
 
 .btn:active:not(:disabled) {
   transform: translateY(1px) scale(0.98);
-  box-shadow: 0 2px 5px rgba(28, 25, 23, 0.12);
+  box-shadow: var(--press-shadow);
 }
 
 .btn:disabled,
@@ -555,13 +602,22 @@ textarea:focus-visible {
   box-shadow: var(--shadow);
 }
 
+/* Superficie pulsable reutilizable: tarjetas, fichas y enlaces-guardados.
+   El transform se escribe con variables para que el hover (CSS) y el tilt 3D
+   (usePress) no se pisen entre sí. */
+.press-superficie,
 .card-motion {
-  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow var(--motion), border-color var(--motion);
+  transform:
+    perspective(620px) translateY(var(--press-lift, 0px)) scale(var(--press-scale, 1))
+    rotateX(var(--press-rx, 0deg)) rotateY(var(--press-ry, 0deg));
+  transition: transform var(--dur-2) var(--ease), box-shadow var(--motion), border-color var(--motion);
 }
 
+.press-superficie:active,
 .card-motion:active {
-  transform: scale(0.985);
-  box-shadow: 0 4px 12px rgba(28, 25, 23, 0.1);
+  --press-scale: 0.985;
+  --press-lift: 1px;
+  box-shadow: var(--press-shadow);
 }
 
 .card:focus-visible,
@@ -773,6 +829,14 @@ textarea:focus-visible {
   min-width: 0;
   touch-action: pan-y pinch-zoom;
   overscroll-behavior-x: contain;
+  transition: transform var(--dur-2) var(--ease);
+}
+
+/* Mientras el dedo arrastra, el panel acompaña sin transición y sin seleccionar texto. */
+.tab-panel[data-arrastrando="si"] {
+  cursor: grabbing;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .tab-panel-exit {
@@ -1057,10 +1121,28 @@ textarea:focus-visible {
     box-shadow: none;
   }
 
+  .press-superficie:hover,
   .card-motion:hover {
-    transform: translateY(-2px);
+    --press-lift: -2px;
+    will-change: transform;
     border-color: #d9cfbe;
     box-shadow: var(--shadow-raised);
+  }
+
+  input:hover:not(:disabled),
+  select:hover:not(:disabled),
+  textarea:hover:not(:disabled) {
+    border-color: #c4b9a7;
+  }
+
+  .aviso-cerrar:hover {
+    background: #f4f1ea;
+    color: var(--ink);
+  }
+
+  .guardado-quitar:hover {
+    border-color: var(--bad);
+    color: var(--bad);
   }
 
   .tabbar a:hover {
@@ -1342,4 +1424,177 @@ a.guardado-link:focus-visible h3 {
 .mini-lista .meta {
   margin: 0;
   white-space: nowrap;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Sistema de interacciones (resumen)
+   · Botones y pestañas: `:active` con hundimiento breve, hover sólo con ratón.
+   · Superficies (`.press-superficie`, `.card-motion`): press + tilt 3D de
+     `lib/usePress.js` a través de las variables `--press-*`.
+   · Campos: la regla global de `input/select/textarea` trae foco, hover,
+     deshabilitado e inválido.
+   · Paneles: `.tab-panel` con `TabSwipePanel.js` (gesto con umbral y regreso).
+   · Avisos: `.aviso` (toast) con `role="status"` y acción "Deshacer".
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Botón asíncrono: éxito y error ─────────────────────────────────────── */
+
+.async-button-error {
+  box-shadow: 0 0 0 3px var(--bad-bg);
+}
+
+.async-button-success .async-button-icon {
+  animation: palomita 320ms var(--ease) both;
+}
+
+/* El error no depende sólo del color: además de la sombra roja, el icono vibra
+   de forma muy breve (2 px) y el mensaje va en texto aparte. */
+.async-button-error .async-button-icon {
+  animation: sacudida 260ms var(--ease) 1;
+}
+
+@keyframes palomita {
+  from { opacity: 0; transform: scale(0.5); }
+  60% { transform: scale(1.15); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes sacudida {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+/* ── Avisos breves (toast) ──────────────────────────────────────────────── */
+
+.avisos {
+  position: fixed;
+  z-index: 60;
+  right: 12px;
+  bottom: calc(72px + env(safe-area-inset-bottom));
+  left: 12px;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.avisos-lista {
+  display: flex;
+  width: 100%;
+  max-width: 460px;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aviso {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px 10px 12px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--green-2);
+  border-radius: 14px;
+  background: var(--paper);
+  box-shadow: var(--shadow-raised);
+  pointer-events: auto;
+  animation: aviso-entra var(--dur-2) var(--ease) both;
+}
+
+.aviso-exito { border-left-color: var(--ok); }
+.aviso-error { border-left-color: var(--bad); }
+
+.aviso-icono {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--gold-soft);
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.aviso-exito .aviso-icono { background: var(--ok-bg); color: var(--ok); }
+.aviso-error .aviso-icono { background: var(--bad-bg); color: var(--bad); }
+
+.aviso-texto {
+  flex: 1;
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.35;
+}
+
+.aviso .btn {
+  min-height: 44px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.aviso-cerrar {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  touch-action: manipulation;
+  transition: background-color var(--motion), color var(--motion);
+}
+
+.aviso-cerrar:active {
+  background: #eee9df;
+}
+
+@keyframes aviso-entra {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ── Movimiento reducido: nada de tilt, rebotes ni cruces ───────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .press-superficie,
+  .card-motion {
+    transform: none !important;
+  }
+
+  .press-superficie:hover,
+  .card-motion:hover {
+    --press-lift: 0px;
+    will-change: auto;
+  }
+
+  .aviso,
+  .aviso-error .aviso-icono,
+  .async-button-success .async-button-icon,
+  .async-button-error .async-button-icon {
+    animation: none !important;
+  }
+
+  .tabbar-indicador {
+    transition: none !important;
+  }
+}
+
+/* ── Selector deshabilitado ─────────────────────────────────────────────── */
+
+.switch-row.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.switch:disabled {
+  cursor: not-allowed;
+}
+
+.switch:disabled::before {
+  background: #e3ded4;
 }

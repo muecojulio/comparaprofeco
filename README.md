@@ -5,6 +5,26 @@ No es un sitio oficial.
 
 Node.js: **24.x** (`engines` en package.json y `.nvmrc`).
 
+## Interacciones (sistema reutilizable)
+
+Todo el comportamiento táctil y accesible vive en piezas compartidas; ninguna
+pantalla inventa sus propias reglas ni se agregaron dependencias:
+
+| Pieza | Para qué |
+|---|---|
+| `lib/usePress.js` | Hundimiento al presionar y tilt 3D discreto (≤ 1.2°) en tarjetas. Sólo con ratón/pluma; con `prefers-reduced-motion` no hace nada. |
+| `app/components/Superficie.js` | Superficie pulsable (`as="a" \| "article" \| "li"`) que ya usan las tarjetas del catálogo, las fichas y los analizados guardados. |
+| `app/components/AsyncButton.js` | Único botón asíncrono: `idle → loading → success / error`, `aria-busy`, anti doble envío y vibración opcional al confirmar. |
+| `app/components/TabSwipePanel.js` | Paneles de pestañas con gesto horizontal (umbral 1.2, 52 px o 28 px rápidos), cruce de 220 ms y teclado. Ignora los gestos que nacen sobre controles. |
+| `app/components/Avisos.js` + `lib/anuncios.js` | Avisos breves (`role="status"`) con autocierre, pausa al pasar el puntero y acción “Deshacer”. |
+| `app/components/OverflowRail.js` | Carruseles: desplazamiento con snap, bordes difuminados y flechas ← → de teclado. |
+| `app/components/SegmentedTabs.js` | Pestañas ARIA con indicador deslizante, centrado del activo y flechas/Inicio/Fin en el `tablist`. |
+
+Tokens de movimiento en `:root` (`app/globals.css`): `--dur-1`, `--dur-2`,
+`--ease`, `--press-scale`, `--press-lift`, `--press-shadow`, `--tilt`.
+Con `prefers-reduced-motion: reduce` se apagan animaciones, tilt y arrastre, y
+el gesto sigue cambiando de panel.
+
 ## Verificación
 
 ```sh

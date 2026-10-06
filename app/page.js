@@ -7,6 +7,7 @@ import Filters from "./components/Filters";
 import Featured from "./components/Featured";
 import OverflowRail from "./components/OverflowRail";
 import SearchCombobox from "./components/SearchCombobox";
+import Superficie from "./components/Superficie";
 import Switch from "./components/Switch";
 
 export default function HomePage() {
@@ -75,7 +76,7 @@ export default function HomePage() {
         keyboardScroll
       >
         {lista.map((c) => (
-          <a className="card card-motion" key={c.id} href={`/categoria/${c.id}`}>
+          <Superficie className="card card-motion" key={c.id} href={`/categoria/${c.id}`}>
             <div className="emoji" aria-hidden="true">{c.emoji}</div>
             <h3>{c.nombre}</h3>
             <div className="meta">
@@ -83,7 +84,7 @@ export default function HomePage() {
               {c.analizados ? ` · ${c.analizados} analizados` : ""}
             </div>
             <div className="meta">{c.productos.length} fichas</div>
-          </a>
+          </Superficie>
         ))}
       </OverflowRail>
 

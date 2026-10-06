@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { getRamo } from "../../lib/data";
 import { claveDe, guardarAnalizado } from "../../lib/analizados";
+import { anunciar } from "../../lib/anuncios";
 import { useAnalizados } from "./useAnalizados";
+import Superficie from "./Superficie";
 
 export default function Featured() {
   const [item, setItem] = useState(null);
@@ -38,10 +40,15 @@ export default function Featured() {
   // Al abrirlo queda guardado en su ramo y en su categoría (lib/analizados.js).
   function guardarAlAbrir() {
     guardarAnalizado(item);
+    anunciar({
+      texto: `Guardado en tus analizados${ramo ? ` · ${ramo.nombre}` : ""}.`,
+      tono: "exito",
+      duracion: 4000
+    });
   }
 
   return (
-    <a
+    <Superficie
       className="featured card-motion"
       href={`/categoria/${item.categoriaId}`}
       onClick={guardarAlAbrir}
@@ -68,6 +75,6 @@ export default function Featured() {
           <span className="badge">Al abrirlo se queda en tus ramos</span>
         )}
       </p>
-    </a>
+    </Superficie>
   );
 }

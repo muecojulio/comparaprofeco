@@ -20,6 +20,27 @@ function scrollSelectedToCenter(rail) {
   rail.scrollTo({ left, behavior });
 }
 
+/* ← → mueven el foco entre los chips del filtro y los traen a la vista.
+   La selección sigue siendo con Enter/Espacio o con el dedo. */
+function moverFoco(evento) {
+  if (evento.key !== "ArrowRight" && evento.key !== "ArrowLeft") return;
+
+  const rail = evento.currentTarget;
+  const chips = [...rail.querySelectorAll("button")];
+  const actual = chips.indexOf(evento.target);
+  if (actual < 0 || chips.length < 2) return;
+
+  evento.preventDefault();
+  const paso = evento.key === "ArrowRight" ? 1 : -1;
+  const siguiente = chips[(actual + paso + chips.length) % chips.length];
+  siguiente.focus();
+  siguiente.scrollIntoView?.({
+    inline: "center",
+    block: "nearest",
+    behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ? "auto" : "smooth"
+  });
+}
+
 function FilterChoice({ selected, onClick, children }) {
   return (
     <button
@@ -52,6 +73,7 @@ export default function Filters({ ramo, anio, onRamo, onAnio }) {
         className="tabs filter-rail"
         role="group"
         ariaLabel="Filtrar por ramo"
+        onKeyDown={moverFoco}
       >
         <FilterChoice selected={ramo === "todos"} onClick={() => onRamo("todos")}>
           Todos los ramos
@@ -73,6 +95,7 @@ export default function Filters({ ramo, anio, onRamo, onAnio }) {
         className="year-row filter-rail"
         role="group"
         ariaLabel="Filtrar por año del estudio"
+        onKeyDown={moverFoco}
       >
         <FilterChoice selected={anio === "todos"} onClick={() => onAnio("todos")}>
           Todo el periodo

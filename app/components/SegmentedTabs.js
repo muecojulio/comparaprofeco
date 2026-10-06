@@ -96,6 +96,7 @@ export default function SegmentedTabs({
         role="tablist"
         aria-label={ariaLabel}
         aria-orientation="horizontal"
+        onKeyDown={moveFocus}
       >
         <span
           className="tab-indicator"
@@ -124,7 +125,6 @@ export default function SegmentedTabs({
               tabIndex={selected ? 0 : -1}
               className="tab segmented-tab"
               onClick={() => onChange(tab.value)}
-              onKeyDown={moveFocus}
             >
               {tab.label}
             </button>

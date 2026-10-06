@@ -2,10 +2,18 @@
 
 import { useMemo, useState } from "react";
 import { ramos, catsDelRamo, NIVELES, getRamo } from "../../lib/data";
-import { claveDe, fechaTexto, quitarAnalizado, porCategoria } from "../../lib/analizados";
+import {
+  claveDe,
+  fechaTexto,
+  guardarAnalizado,
+  quitarAnalizado,
+  porCategoria
+} from "../../lib/analizados";
+import { anunciar } from "../../lib/anuncios";
 import { useAnalizados } from "../components/useAnalizados";
 import Filters from "../components/Filters";
 import OverflowRail from "../components/OverflowRail";
+import Superficie from "../components/Superficie";
 
 export default function ExplorarPage() {
   const [ramo, setRamo] = useState("todos");
@@ -19,6 +27,18 @@ export default function ExplorarPage() {
     [analizados, ramo]
   );
   const guardadosPorCategoria = useMemo(() => porCategoria(analizados), [analizados]);
+
+  /* Quitar avisa qué se quitó y ofrece regresarlo tal cual (sin cambiar la
+     fecha en que se abrió). */
+  function quitar(g) {
+    quitarAnalizado(claveDe(g));
+    anunciar({
+      texto: `Quité “${g.producto?.marca || ""} · ${g.producto?.nombre || ""}”.`,
+      tono: "info",
+      etiquetaAccion: "Deshacer",
+      onAccion: () => guardarAnalizado(g, { conservar: true })
+    });
+  }
   const ramoActual = ramos.find((r) => r.id === ramo);
 
   return (
@@ -55,7 +75,7 @@ export default function ExplorarPage() {
                 const nivel = NIVELES[g.producto?.nivel];
                 return (
                   <li className="guardado" key={clave}>
-                    <a className="guardado-link" href={`/categoria/${g.categoriaId}`}>
+                    <Superficie className="guardado-link" href={`/categoria/${g.categoriaId}`}>
                       <span className={`badge ${g.producto?.nivel || ""}`}>
                         {nivel ? nivel.short : "Analizado"}
                       </span>{" "}
@@ -66,11 +86,11 @@ export default function ExplorarPage() {
                         {getRamo(g.ramo)?.nombre || "Ramo"} · {g.categoria} · abierto el{" "}
                         {fechaTexto(g.abierto)}
                       </span>
-                    </a>
+                    </Superficie>
                     <button
                       type="button"
                       className="btn btn-ghost guardado-quitar"
-                      onClick={() => quitarAnalizado(clave)}
+                      onClick={() => quitar(g)}
                       aria-label={`Quitar ${g.producto?.nombre} de tus analizados`}
                     >
                       Quitar
@@ -102,7 +122,7 @@ export default function ExplorarPage() {
         keyboardScroll
       >
         {lista.map((c) => (
-          <a className="card card-motion" key={c.id} href={`/categoria/${c.id}`}>
+          <Superficie className="card card-motion" key={c.id} href={`/categoria/${c.id}`}>
             <div className="emoji" aria-hidden="true">{c.emoji}</div>
             <h3>{c.nombre}</h3>
             <div className="meta">
@@ -113,7 +133,7 @@ export default function ExplorarPage() {
                 <span className="badge destacado">★ Tienes analizados</span>
               </div>
             )}
-          </a>
+          </Superficie>
         ))}
       </OverflowRail>
     </main>

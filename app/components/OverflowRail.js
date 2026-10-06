@@ -34,6 +34,48 @@ const OverflowRail = forwardRef(function OverflowRail(
     [forwardedRef]
   );
 
+  const comportamiento = useCallback(
+    () =>
+      window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ? "auto" : "smooth",
+    []
+  );
+
+  /* Teclado de los carruseles: ← → avanzan una "pantalla" del rail. Home/End
+     sólo cuando el foco está en el propio rail, para no sorprender cuando el
+     foco vive en una tarjeta. */
+  function handleKeyDown(event) {
+    props.onKeyDown?.(event);
+    if (event.defaultPrevented || !keyboardScroll) return;
+
+    const objetivo = event.target;
+    if (
+      objetivo instanceof Element &&
+      objetivo.closest("input, select, textarea, [contenteditable='true']")
+    ) {
+      return;
+    }
+
+    const rail = railRef.current;
+    if (!rail) return;
+    const paso = Math.max(120, rail.clientWidth * 0.8);
+    const maximo = Math.max(0, rail.scrollWidth - rail.clientWidth);
+    const enElRail = objetivo === rail;
+
+    if (event.key === "ArrowRight" || event.key === "PageDown") {
+      event.preventDefault();
+      rail.scrollTo({ left: Math.min(maximo, rail.scrollLeft + paso), behavior: comportamiento() });
+    } else if (event.key === "ArrowLeft" || event.key === "PageUp") {
+      event.preventDefault();
+      rail.scrollTo({ left: Math.max(0, rail.scrollLeft - paso), behavior: comportamiento() });
+    } else if (event.key === "Home" && enElRail) {
+      event.preventDefault();
+      rail.scrollTo({ left: 0, behavior: comportamiento() });
+    } else if (event.key === "End" && enElRail) {
+      event.preventDefault();
+      rail.scrollTo({ left: maximo, behavior: comportamiento() });
+    }
+  }
+
   const updateEdges = useCallback(() => {
     const rail = railRef.current;
     if (!rail) return;
@@ -148,6 +190,7 @@ const OverflowRail = forwardRef(function OverflowRail(
           props.onScroll?.(event);
           updateEdges();
         }}
+        onKeyDown={handleKeyDown}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
