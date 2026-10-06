@@ -18,6 +18,10 @@ npm run check # npm audit + compilación de producción
 - Filtros por ramo y año (2024 / 2025 / 2026 / todo el periodo)
 - Fuentes con PDFs de los tres años
 - Producto analizado del día (rotación automática)
+- **Analizados guardados**: al abrir el producto del día queda guardado en el dispositivo,
+  dentro de su ramo (pestaña Ramos) y de su categoría (ficha del estudio), aunque cambie el día
+- Pestañas: Inicio · Ramos · Fuentes · **Instalar** · Privacidad (instalar y privacidad ya no
+  se repiten en el menú de Inicio)
 - Índices en memoria (id, ramo, año): no hay base SQL
 - Caché: service worker + memoria del servidor + headers
 - Política de privacidad

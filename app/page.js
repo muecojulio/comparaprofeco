@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { APP, ramos, categorias, catsDelRamo } from "../lib/data";
+import { useAnalizados } from "./components/useAnalizados";
 import Filters from "./components/Filters";
 import Featured from "./components/Featured";
 import OverflowRail from "./components/OverflowRail";
@@ -12,6 +13,7 @@ export default function HomePage() {
   const [ramo, setRamo] = useState("todos");
   const [anio, setAnio] = useState("todos");
   const [soloDestacados, setSoloDestacados] = useState(false);
+  const { lista: analizados } = useAnalizados();
   const lista = useMemo(() => {
     let items = catsDelRamo(ramo, anio);
     if (soloDestacados) {
@@ -30,13 +32,20 @@ export default function HomePage() {
         </p>
         <SearchCombobox />
         <div className="pills" style={{ marginTop: 16 }}>
-          <a className="btn btn-gold" href="/instalar">Instalar en el celular</a>
           <a className="btn btn-ghost" href="/fuentes">Fuentes Profeco</a>
-          <a className="btn btn-ghost" href="/privacidad">Privacidad</a>
         </div>
       </section>
 
       <Featured />
+
+      {analizados.length > 0 && (
+        <p className="meta" style={{ marginTop: 10 }}>
+          {analizados.length === 1
+            ? "Tienes 1 analizado guardado"
+            : `Tienes ${analizados.length} analizados guardados`}{" "}
+          · <a href="/explorar">verlos en Ramos</a>
+        </p>
+      )}
 
       <h2 style={{ marginTop: 28, marginBottom: 8 }}>Catálogo</h2>
       <Filters ramo={ramo} anio={anio} onRamo={setRamo} onAnio={setAnio} />

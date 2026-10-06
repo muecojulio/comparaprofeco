@@ -1,9 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { getRamo } from "../../lib/data";
+import { claveDe, guardarAnalizado } from "../../lib/analizados";
+import { useAnalizados } from "./useAnalizados";
 
 export default function Featured() {
   const [item, setItem] = useState(null);
+  const { lista } = useAnalizados();
 
   useEffect(() => {
     let alive = true;
@@ -28,16 +32,42 @@ export default function Featured() {
 
   if (!item) return null;
 
+  const ramo = getRamo(item.ramo);
+  const guardado = lista.some((g) => claveDe(g) === claveDe(item));
+
+  // Al abrirlo queda guardado en su ramo y en su categoría (lib/analizados.js).
+  function guardarAlAbrir() {
+    guardarAnalizado(item);
+  }
+
   return (
-    <a className="featured card-motion" href={`/categoria/${item.categoriaId}`}>
+    <a
+      className="featured card-motion"
+      href={`/categoria/${item.categoriaId}`}
+      onClick={guardarAlAbrir}
+      data-guardado={guardado ? "si" : "no"}
+    >
       <div className="kicker">Producto analizado hoy</div>
       <h2>
         {item.producto.marca} · {item.producto.nombre}
       </h2>
       <p className="meta">
+        {ramo ? `${ramo.nombre} · ` : ""}
         {item.categoria} · {item.mes} {item.anio}
       </p>
       <p>{item.producto.hallazgo}</p>
+      <p className="featured-guardado">
+        {guardado ? (
+          <>
+            <span className="badge destacado">✓ Guardado en tus ramos</span>{" "}
+            <span className="meta">
+              Está en {ramo ? ramo.nombre : "su ramo"} › {item.categoria}
+            </span>
+          </>
+        ) : (
+          <span className="badge">Al abrirlo se queda en tus ramos</span>
+        )}
+      </p>
     </a>
   );
 }

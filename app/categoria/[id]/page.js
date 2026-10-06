@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { NIVELES, getCategoria, getRamo } from "../../../lib/data";
+import { productoDelDia } from "../../../lib/featured";
+import { claveDe, fechaTexto, guardarAnalizado, quitarAnalizado } from "../../../lib/analizados";
+import { useAnalizados } from "../../components/useAnalizados";
 import SegmentedTabs from "../../components/SegmentedTabs";
 
 function fotoUrl(cat, prod) {
@@ -91,6 +94,26 @@ export default function CategoriaPage() {
   }, [cat, tab]);
 
   const ramo = cat ? getRamo(cat.ramo) : null;
+
+  // Analizados que el usuario ya abrió y que pertenecen a este estudio.
+  const { lista: analizados } = useAnalizados();
+  const guardadosAqui = useMemo(
+    () => analizados.filter((g) => g.categoriaId === cat?.id),
+    [analizados, cat?.id]
+  );
+
+  // ¿Este estudio es el del "producto analizado de hoy"? (se calcula en el cliente
+  // para no desajustar la hidratación: el resultado depende de la fecha).
+  const [destacadoHoy, setDestacadoHoy] = useState(null);
+  useEffect(() => {
+    if (!cat) return;
+    const hoy = productoDelDia();
+    setDestacadoHoy(hoy?.categoriaId === cat.id ? hoy : null);
+  }, [cat]);
+
+  const guardadoHoy = Boolean(
+    destacadoHoy && guardadosAqui.some((g) => claveDe(g) === claveDe(destacadoHoy))
+  );
 
   useEffect(
     () => () => {
@@ -191,6 +214,63 @@ export default function CategoriaPage() {
           </a>
         </div>
       </section>
+
+      {guardadosAqui.length > 0 && (
+        <section className="guardados-bloque" aria-label="Analizados guardados de este estudio">
+          <div className="guardados-encabezado">
+            <h2>Tus analizados de este estudio</h2>
+            <span className="meta">
+              {ramo ? ramo.nombre : "Ramo"} › {cat.nombre}
+            </span>
+          </div>
+          <ul className="guardados-lista">
+            {guardadosAqui.map((g) => {
+              const clave = claveDe(g);
+              const nivel = NIVELES[g.producto?.nivel];
+              return (
+                <li className="guardado" key={clave}>
+                  <div className="guardado-link" data-no-swipe>
+                    <span className={`badge ${g.producto?.nivel || ""}`}>
+                      {nivel ? nivel.label : "Analizado"}
+                    </span>{" "}
+                    <h3>
+                      {g.producto?.marca} · {g.producto?.nombre}
+                    </h3>
+                    <span className="meta">
+                      Abierto el {fechaTexto(g.abierto)}
+                      {g.analizado ? ` · analizado el ${fechaTexto(g.analizado)}` : ""}
+                    </span>
+                    {g.producto?.hallazgo ? <p>{g.producto.hallazgo}</p> : null}
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-ghost guardado-quitar"
+                    onClick={() => quitarAnalizado(clave)}
+                    aria-label={`Quitar ${g.producto?.nombre} de tus analizados`}
+                  >
+                    Quitar
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
+      {destacadoHoy && !guardadoHoy && (
+        <div className="alert guardado-sugerencia">
+          Este estudio tiene el <b>producto analizado de hoy</b>: {destacadoHoy.producto.marca} ·{" "}
+          {destacadoHoy.producto.nombre}.{" "}
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={() => guardarAnalizado(destacadoHoy)}
+            data-no-swipe
+          >
+            Guardarlo en mis analizados
+          </button>
+        </div>
+      )}
 
       <SegmentedTabs
         tabs={evaluationTabs}

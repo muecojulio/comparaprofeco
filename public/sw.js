@@ -1,4 +1,4 @@
-const CACHE = "comparaprofeco-v3";
+const CACHE = "comparaprofeco-v4";
 const CORE = ["/", "/explorar", "/instalar", "/fuentes", "/privacidad", "/manifest.json", "/icon.svg"];
 
 self.addEventListener("install", (event) => {
