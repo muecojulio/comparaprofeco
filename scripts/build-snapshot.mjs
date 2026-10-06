@@ -62,7 +62,6 @@ async function snapshotDesdeArchivos(carpeta) {
   return {
     schema: 1,
     version: await hashSnapshot({ archivos, registros: registros.length, actualizado: datos.actualizado }),
-    generadoEn: new Date().toISOString(),
     fuente: {
       portal: "datos.gob.mx · Plataforma Nacional de Datos Abiertos (CKAN)",
       programa: "Quién es quién en los precios",
