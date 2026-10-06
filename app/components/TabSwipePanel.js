@@ -27,8 +27,8 @@ const PROPORCION = 1.2; // |dx| debe superar |dy| × 1.2
 const RECORRIDO = 52; // px
 const RECORRIDO_RAPIDO = 28; // px, si además fue rápido
 const VELOCIDAD = 0.55; // px/ms
-const TOPE = 56; // px que acompaña el panel
-const AMORTIGUAR = 0.35;
+const TOPE = 78; // px que acompaña el panel (así se siente el arrastre)
+const AMORTIGUAR = 0.5;
 const CRUCE = 220; // debe coincidir con las animaciones `tab-panel-*` del CSS
 
 function naceSobreControl(objetivo) {

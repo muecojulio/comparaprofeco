@@ -27,11 +27,11 @@
   --press-scale: 1;
   --press-lift: 0px;
   /* Respuesta al tocar (las usan :active y :hover, nunca el reposo). */
-  --press-scale-activo: 0.985;
-  --press-lift-activo: 1px;
-  --press-lift-hover: -2px;
+  --press-scale-activo: 0.97;   /* se hunde de forma que se siente */
+  --press-lift-activo: 2px;
+  --press-lift-hover: -3px;
   --press-shadow: 0 2px 5px rgba(28, 25, 23, 0.12);
-  --tilt: 1.1deg;
+  --tilt: 2.4deg;   /* inclinación que sí se percibe */
   --motion: var(--dur-2) var(--ease);
 }
 
@@ -197,8 +197,9 @@ input:focus:not(:focus-visible) {
   top: 6px;
   bottom: calc(8px + env(safe-area-inset-bottom));
   left: 0;
-  border-radius: 10px;
-  background: #edf4ef;
+  border-radius: 11px;
+  background: #d7ebdd;
+  box-shadow: inset 0 0 0 1px #bfdccc;
   pointer-events: none;
   transition: transform var(--dur-2) var(--ease), width var(--dur-2) var(--ease);
 }
@@ -213,7 +214,7 @@ input:focus:not(:focus-visible) {
 }
 
 .tabbar a[aria-current="page"] .ticon {
-  transform: translateY(-1px) scale(1.08);
+  transform: translateY(-1px) scale(1.16);
 }
 
 .ticon {
@@ -1065,8 +1066,8 @@ textarea:focus-visible {
 
 @keyframes tab-panel-forward {
   from {
-    opacity: 0.45;
-    transform: translateX(10px);
+    opacity: 0.3;
+    transform: translateX(22px);
   }
   to {
     opacity: 1;
@@ -1076,8 +1077,8 @@ textarea:focus-visible {
 
 @keyframes tab-panel-backward {
   from {
-    opacity: 0.45;
-    transform: translateX(-10px);
+    opacity: 0.3;
+    transform: translateX(-22px);
   }
   to {
     opacity: 1;
@@ -1088,14 +1089,14 @@ textarea:focus-visible {
 @keyframes tab-panel-exit-forward {
   to {
     opacity: 0;
-    transform: translateX(-10px);
+    transform: translateX(-22px);
   }
 }
 
 @keyframes tab-panel-exit-backward {
   to {
     opacity: 0;
-    transform: translateX(10px);
+    transform: translateX(22px);
   }
 }
 
@@ -1444,8 +1445,20 @@ a.guardado-link:focus-visible h3 {
 
 /* ── Botón asíncrono: éxito y error ─────────────────────────────────────── */
 
+.async-button-success {
+  background: var(--ok);
+  color: #fff;
+  box-shadow: 0 0 0 4px var(--ok-bg);
+}
+
 .async-button-error {
-  box-shadow: 0 0 0 3px var(--bad-bg);
+  background: var(--bad);
+  color: #fff;
+  box-shadow: 0 0 0 4px var(--bad-bg);
+}
+
+.async-button[data-state="loading"] {
+  opacity: 0.92;
 }
 
 .async-button-success .async-button-icon {
@@ -1494,47 +1507,63 @@ a.guardado-link:focus-visible h3 {
 .aviso {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 10px 10px 12px;
+  gap: 11px;
+  padding: 13px 12px 13px 14px;
   border: 1px solid var(--line);
-  border-left: 4px solid var(--green-2);
-  border-radius: 14px;
+  border-left: 5px solid var(--green-2);
+  border-radius: 16px;
   background: var(--paper);
-  box-shadow: var(--shadow-raised);
+  box-shadow: 0 16px 38px rgba(28, 25, 23, 0.28);
   pointer-events: auto;
-  animation: aviso-entra var(--dur-2) var(--ease) both;
+  animation: aviso-entra 260ms var(--ease) both;
 }
 
-.aviso-exito { border-left-color: var(--ok); }
-.aviso-error { border-left-color: var(--bad); }
+/* El acuse de una acción se ve claro: fondo de color, no sólo una franja. */
+.aviso-exito {
+  border-color: var(--ok);
+  border-left-color: var(--ok);
+  background: var(--green);
+  color: #fff;
+}
+
+.aviso-error {
+  border-color: var(--bad);
+  border-left-color: var(--bad);
+  background: var(--bad);
+  color: #fff;
+}
 
 .aviso-icono {
   display: grid;
-  width: 22px;
-  height: 22px;
-  flex: 0 0 22px;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
   place-items: center;
   border-radius: 50%;
   background: var(--gold-soft);
   color: var(--green);
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 800;
 }
 
-.aviso-exito .aviso-icono { background: var(--ok-bg); color: var(--ok); }
-.aviso-error .aviso-icono { background: var(--bad-bg); color: var(--bad); }
+.aviso-exito .aviso-icono { background: var(--gold); color: var(--green); }
+.aviso-error .aviso-icono { background: #fff; color: var(--bad); }
 
 .aviso-texto {
   flex: 1;
   margin: 0;
-  font-size: 13.5px;
+  font-size: 14.5px;
+  font-weight: 600;
   line-height: 1.35;
 }
 
 .aviso .btn {
   min-height: 44px;
-  padding: 8px 12px;
-  font-size: 13px;
+  padding: 8px 13px;
+  border-color: rgba(255, 255, 255, 0.55);
+  background: #fff;
+  color: var(--green);
+  font-size: 13.5px;
 }
 
 .aviso-cerrar {
@@ -1546,12 +1575,13 @@ a.guardado-link:focus-visible h3 {
   border: 0;
   border-radius: 10px;
   background: transparent;
-  color: var(--muted);
+  color: currentColor;
   cursor: pointer;
-  font-size: 20px;
+  font-size: 21px;
   line-height: 1;
+  opacity: 0.85;
   touch-action: manipulation;
-  transition: background-color var(--motion), color var(--motion);
+  transition: background-color var(--motion), color var(--motion), opacity var(--motion);
 }
 
 .aviso-cerrar:active {
@@ -1559,7 +1589,7 @@ a.guardado-link:focus-visible h3 {
 }
 
 @keyframes aviso-entra {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(18px) scale(0.97); }
   to { opacity: 1; transform: none; }
 }
 
