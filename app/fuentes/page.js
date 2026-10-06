@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { ramos } from "../../lib/data";
 import { pdfsFiltrados } from "../../lib/indexes";
 import Accordion from "../components/Accordion";
+import InstalarInvestigaciones from "../components/InstalarInvestigaciones";
 import Filters from "../components/Filters";
 import OverflowRail from "../components/OverflowRail";
 
@@ -56,6 +57,9 @@ export default function FuentesPage() {
         Sitios oficiales: gob.mx/profeco y revistadelconsumidor.profeco.gob.mx.
         También se consulta datos.gob.mx y Open Food Facts, sin quitar las ligas que ya tenía la app.
       </div>
+      <Accordion title="Precios al día (Quién es quién)">
+        <InstalarInvestigaciones />
+      </Accordion>
       <Accordion title="Datos abiertos (sin key)" initiallyOpen>
         <DatosAbiertos />
       </Accordion>

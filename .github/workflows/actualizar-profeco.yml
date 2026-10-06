@@ -1,0 +1,65 @@
+# .github/workflows/actualizar-profeco.yml
+# ---------------------------------------------------------------------------
+# Revisa a diario el portal de datos abiertos y, cuando PROFECO publica una
+# investigación nueva ("Quién es quién en los precios"), regenera
+# public/data/profeco-latest.json y lo sube al repo. Eso dispara un despliegue
+# en Vercel, así que la app abre ya actualizada sin que nadie toque nada.
+#
+# También se puede lanzar a mano: pestaña "Actions" → Run workflow.
+#
+# Requisito (una sola vez): GitHub → Settings → Actions → General →
+# "Workflow permissions" → Read and write permissions.
+# ---------------------------------------------------------------------------
+name: Actualizar precios PROFECO
+
+on:
+  schedule:
+    - cron: "0 11 * * *" # 11:00 UTC = 5:00 en CDMX, todos los días
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: actualizar-profeco
+  cancel-in-progress: false
+
+jobs:
+  actualizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Generar el resumen de precios
+        env:
+          # Opcional: si el portal llegara a bloquear la IP del runner,
+          # define el secreto DATOS_PROXY con un worker tuyo, por ejemplo:
+          #   DATOS_PROXY=https://mi-worker.workers.dev/?u={url}
+          DATOS_PROXY: ${{ secrets.DATOS_PROXY }}
+        run: node scripts/build-snapshot.mjs --max 20000 --pagina 5000
+
+      - name: ¿Hubo cambios?
+        id: diff
+        run: |
+          if git diff --quiet -- public/data/profeco-latest.json; then
+            echo "cambio=no" >> "$GITHUB_OUTPUT"
+            echo "Sin novedades: PROFECO no ha publicado nada nuevo."
+          else
+            echo "cambio=si" >> "$GITHUB_OUTPUT"
+            echo "Hay investigaciones nuevas."
+          fi
+
+      - name: Publicar
+        if: steps.diff.outputs.cambio == 'si'
+        run: |
+          git config user.name  "comparaprofeco[bot]"
+          git config user.email "comparaprofeco@users.noreply.github.com"
+          PERIODO=$(node -e "console.log(require('./public/data/profeco-latest.json').fuente.periodo)")
+          git add public/data/profeco-latest.json
+          git commit -m "precios: investigaciones de ${PERIODO}"
+          git push

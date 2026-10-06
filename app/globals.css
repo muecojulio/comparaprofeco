@@ -1265,3 +1265,81 @@ a.guardado-link:focus-visible h3 {
     align-self: flex-start;
   }
 }
+
+/* ── Investigaciones de precios (Quién es quién) ── */
+
+.progress {
+  display: block;
+  height: 8px;
+  margin-top: 12px;
+  border-radius: 999px;
+  background: #efe7d8;
+  overflow: hidden;
+}
+
+.progress span {
+  display: block;
+  height: 100%;
+  background: var(--green-2);
+  transition: width 180ms ease;
+}
+
+.datos-grid {
+  display: grid;
+  gap: 6px;
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--bg);
+}
+
+.datos-grid > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  border-bottom: 1px dashed var(--line);
+}
+
+.datos-grid > div:last-child {
+  border-bottom: 0;
+}
+
+.datos-grid dt {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.datos-grid dd {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.mini-lista {
+  display: grid;
+  gap: 6px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mini-lista li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  font-size: 14px;
+}
+
+.mini-lista .meta {
+  margin: 0;
+  white-space: nowrap;
+}

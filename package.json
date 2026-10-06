@@ -1,14 +1,16 @@
 {
   "name": "comparaprofeco",
   "private": true,
-  "version": "1.3.0",
+  "version": "1.4.0",
   "engines": {
     "node": "24.x"
   },
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/build-snapshot.mjs --max 20000 || echo 'portal no disponible: se conserva el resumen anterior'",
     "build": "next build",
     "start": "next start",
+    "datos": "node scripts/build-snapshot.mjs",
     "check": "npm audit --audit-level=low && npm run build"
   },
   "dependencies": {
