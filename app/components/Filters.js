@@ -41,11 +41,12 @@ function moverFoco(evento) {
   });
 }
 
-function FilterChoice({ selected, onClick, children }) {
+function FilterChoice({ selected, onClick, colores, children }) {
   return (
     <button
       type="button"
-      className="tab filter-chip"
+      className={`tab filter-chip ${colores ? "filter-chip-ramo" : ""}`.trim()}
+      style={colores ? { "--ca": colores[0], "--cb": colores[1] } : undefined}
       aria-pressed={selected}
       onClick={onClick}
     >
@@ -81,6 +82,7 @@ export default function Filters({ ramo, anio, onRamo, onAnio }) {
         {ramos.map((item) => (
           <FilterChoice
             key={item.id}
+            colores={item.colores}
             selected={ramo === item.id}
             onClick={() => onRamo(item.id)}
           >

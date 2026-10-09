@@ -49,10 +49,11 @@ export default function Shell({ children }) {
 
   return (
     <div className="phone">
+      <div className="aurora" aria-hidden="true"><i /><i /><i /></div>
       <a className="skip-link" href="#main-content">Saltar al contenido</a>
       <header className="appbar">
         <a className="brand" href="/">
-          <span className="brand-mark" aria-hidden="true">CP</span>
+          <span className="brand-mark" aria-hidden="true"><span>CP</span></span>
           <span>
             <b>ComparaProfeco</b>
             <small>App familiar</small>

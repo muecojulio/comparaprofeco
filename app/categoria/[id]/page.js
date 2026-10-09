@@ -56,7 +56,7 @@ function ProductResults({ cat, tab, products }) {
       )}
 
       {products.map((product) => (
-        <Superficie as="article" className="prod" key={product.id}>
+        <Superficie as="article" className="prod" key={product.id} data-nivel={product.nivel}>
           <Thumb cat={cat} prod={product} />
           <div>
             <span className={`badge ${product.nivel}`}>{NIVELES[product.nivel].label}</span>
@@ -129,8 +129,11 @@ export default function CategoriaPage() {
       <a className="meta back-link" href="/">
         ← {ramo ? ramo.nombre : "Todos los ramos"}
       </a>
-      <section className="hero" style={{ marginTop: 10 }}>
-        <div className="kicker">
+      <section
+        className="hero hero-viva"
+        style={{ marginTop: 10, "--acento": ramo?.colores?.[0], "--acento-2": ramo?.colores?.[1] }}
+      >
+        <div className="kicker kicker-pill">
           {cat.emoji} Estudio · {cat.mes} {cat.anio}
         </div>
         <h1>{cat.nombre}</h1>

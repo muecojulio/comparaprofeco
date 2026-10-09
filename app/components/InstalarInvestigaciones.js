@@ -138,7 +138,7 @@ export default function InstalarInvestigaciones() {
 
       // Primero en vivo (lo más fresco); si falla, se usa el archivo del deploy.
       try {
-        const r = await fetch(`${URL_API}?armar=1&max=20000&version=${encodeURIComponent(guardado?.version || "")}`);
+        const r = await fetch(`${URL_API}?armar=1&version=${encodeURIComponent(guardado?.version || "")}`);
         const d = await r.json();
         if (d.ok && d.snapshot) nuevo = d.snapshot;
         else setError(d.detalle || d.error || "");
