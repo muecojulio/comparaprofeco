@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { APP, ramos, categorias, catsDelRamo } from "../lib/data";
+import { APP, ramos, categorias, catsDelRamo, getRamo } from "../lib/data";
 import { useAnalizados } from "./components/useAnalizados";
 import Filters from "./components/Filters";
 import Featured from "./components/Featured";
@@ -9,6 +9,12 @@ import OverflowRail from "./components/OverflowRail";
 import SearchCombobox from "./components/SearchCombobox";
 import Superficie from "./components/Superficie";
 import Switch from "./components/Switch";
+
+/** Color del ramo como variables CSS (--acento, --acento-2) para la tarjeta. */
+function acento(ramoId) {
+  const [a, b] = getRamo(ramoId)?.colores || ["#c9a227", "#146c54"];
+  return { "--acento": a, "--acento-2": b };
+}
 
 export default function HomePage() {
   const [ramo, setRamo] = useState("todos");
@@ -25,9 +31,28 @@ export default function HomePage() {
 
   return (
     <main className="wrap">
-      <section className="hero">
-        <div className="kicker">App familiar</div>
-        <h1 className="screen-title">Compara antes de comprar</h1>
+      <div className="ticker" aria-hidden="true">
+        <div className="ticker-pista">
+          {[0, 1].map((copia) => (
+            <span className="ticker-grupo" key={copia}>
+              <span>🛒 Alimentos</span><span>📺 Tecnología</span><span>🏠 Hogar</span>
+              <span>🧴 Higiene</span><span>👕 Ropa</span><span>📚 Escolares</span>
+              <span>🔎 Revisa el PDF oficial</span><span>📊 Estudios 2024 · 2025 · 2026</span>
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <section className="hero hero-viva">
+        <div className="calcomanias" aria-hidden="true">
+          <span className="calcomania c1">🛒</span>
+          <span className="calcomania c2">📺</span>
+          <span className="calcomania c3">🧴</span>
+          <span className="calcomania c4">👕</span>
+          <span className="calcomania c5">📚</span>
+        </div>
+        <div className="kicker kicker-pill"><span className="punto-vivo" aria-hidden="true" />App familiar</div>
+        <h1 className="screen-title titulo-brillo">Compara antes de comprar</h1>
         <p className="lead">
           Los mismos ramos que cubre Profeco. Filtro por ramo y por año (2024, 2025, 2026 o todo el periodo).
         </p>
@@ -48,7 +73,7 @@ export default function HomePage() {
         </p>
       )}
 
-      <h2 style={{ marginTop: 28, marginBottom: 8 }}>Catálogo</h2>
+      <h2 className="titulo-seccion" style={{ marginTop: 28, marginBottom: 8 }}>Catálogo</h2>
       <Filters ramo={ramo} anio={anio} onRamo={setRamo} onAnio={setAnio} />
       <Switch
         name="destacados"
@@ -76,7 +101,12 @@ export default function HomePage() {
         keyboardScroll
       >
         {lista.map((c) => (
-          <Superficie className="card card-motion" key={c.id} href={`/categoria/${c.id}`}>
+          <Superficie
+            className="card card-motion card-ramo"
+            key={c.id}
+            href={`/categoria/${c.id}`}
+            style={acento(c.ramo)}
+          >
             <div className="emoji" aria-hidden="true">{c.emoji}</div>
             <h3>{c.nombre}</h3>
             <div className="meta">

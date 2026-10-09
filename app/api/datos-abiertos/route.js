@@ -45,20 +45,22 @@ const RESPALDO = [
   { name: "programa_quien_es_quien_precios_2024", title: "Programa Quién es quién en los precios (2024)", organization: "Procuraduría Federal del Consumidor (PROFECO)" },
 ].map((d) => ({ ...d, notes: null, url: fichaDataset(d.name) }));
 
+// Sólo letras, números, espacios y guiones, máximo 80 caracteres. Evita que la
+// búsqueda se use para inyectar sintaxis en el motor del portal.
+const RE_Q = /^[\p{L}\p{N} _-]{1,80}$/u;
+
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
-  const q = (searchParams.get("q") || "profeco").trim() || "profeco";
-  const rows = Math.min(Math.max(Number(searchParams.get("rows") || 8), 1), 20);
-  const org = searchParams.get("org"); // p. ej. ?org=profeco → sólo conjuntos de PROFECO
-  const incluirInvestigacion = searchParams.get("incluir") === "investigacion";
+  const qCruda = (searchParams.get("q") || "profeco").trim() || "profeco";
+  const q = RE_Q.test(qCruda) ? qCruda : "profeco";
+  const rows = Math.min(Math.max(Number(searchParams.get("rows") || 8) || 8, 1), 20);
 
   try {
-    const payload = await cached(`ckan:${q}:${rows}:${org || ""}`, 15 * 60 * 1000, async () => {
+    const payload = await cached(`ckan:${q}:${rows}`, 15 * 60 * 1000, async () => {
       const url = new URL(CKAN);
       url.searchParams.set("q", q);
       url.searchParams.set("rows", String(rows));
       url.searchParams.set("sort", "metadata_modified desc");
-      if (org) url.searchParams.set("fq", `organization:${org}`); // ojo: owner_org necesita UUID
 
       const res = await fetch(url, {
         headers: { "User-Agent": UA, Accept: "application/json" },
@@ -86,36 +88,11 @@ export async function GET(req) {
       };
     });
 
-    let investigacion = null;
-    if (incluirInvestigacion) {
-      try {
-        investigacion = await cached("ckan:investigacion", 15 * 60 * 1000, async () => {
-          const u = new URL(CKAN);
-          u.searchParams.set("q", "quien es quien en los precios");
-          u.searchParams.set("rows", "5");
-          u.searchParams.set("fq", "organization:profeco");
-          u.searchParams.set("sort", "metadata_modified desc");
-          const r = await fetch(u, { headers: { "User-Agent": UA, Accept: "application/json" }, next: { revalidate: 900 } });
-          if (!r.ok) throw new Error(`ckan ${r.status}`);
-          const j = await r.json();
-          const primero = (j?.result?.results || [])[0];
-          if (!primero) return null;
-          return {
-            dataset: primero.name,
-            titulo: primero.title,
-            actualizado: (primero.metadata_modified || "").slice(0, 10) || null,
-            url: fichaDataset(primero.name),
-            recursos: primero.num_resources ?? 0,
-          };
-        });
-      } catch {
-        investigacion = null; // es información extra: si falla, no tumba la respuesta
-      }
-    }
-
-    return NextResponse.json({ ...payload, investigacion });
+    return NextResponse.json(payload);
   } catch (err) {
     // El portal no respondió: se sirve el respaldo para que la tarjeta siga funcionando.
+    // El detalle técnico se registra en el servidor, no se envía al navegador.
+    console.warn("[datos-abiertos]", String(err?.message || err));
     return NextResponse.json({
       fuente: CKAN,
       q,
@@ -124,9 +101,7 @@ export async function GET(req) {
       degradado: true,
       aviso: {
         error: "El portal de datos abiertos no respondió a tiempo",
-        detalle: String(err?.message || err),
-        sugerencia:
-          "Se muestran conjuntos de datos del catálogo local. Si persiste, revisa que la URL del portal incluya www y no lleve /busca.",
+        sugerencia: "Se muestran conjuntos de datos del catálogo local.",
       },
     });
   }

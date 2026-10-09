@@ -5,7 +5,7 @@ import { crearCliente, descubrirUltimaInvestigacion, construirSnapshot, resumir,
  * /api/actualizar — investigaciones de precios de PROFECO (datos.gob.mx)
  * ---------------------------------------------------------------------------
  *  · ?solo=verificar&version=<hash>  → revisión barata: ¿ya publicaron algo nuevo?
- *  · ?armar=1&max=20000             → arma el resumen EN VIVO desde el portal
+ *  · ?armar=1                       → arma el resumen EN VIVO desde el portal
  *  · sin parámetros                 → devuelve el archivo del deploy
  *                                     (public/data/profeco-latest.json)
  *
@@ -18,22 +18,40 @@ export const dynamic = "force-dynamic";
 
 const cliente = crearCliente({ log: (...a) => console.log("[actualizar]", ...a) });
 
-// Caché en memoria de la instancia (evita golpear el portal en cada visita)
+// Tope fijo de registros: el cliente ya no puede pedir más (antes un `max`
+// libre permitía llenar la memoria del servidor y castigar al portal).
+const MAX_REGISTROS = 20000;
+
+// Caché en memoria de la instancia. Guarda la PROMESA, así varias visitas
+// simultáneas comparten una sola consulta al portal.
 const cache = new Map(); // clave → { valor, expira }
 const TTL = 15 * 60 * 1000;
+const MAX_CLAVES = 20;
 
-async function conCache(clave, fn, ttl = TTL) {
+function conCache(clave, fn, ttl = TTL) {
   const hit = cache.get(clave);
-  if (hit && hit.expira > Date.now()) return { ...hit.valor, enCache: true };
-  const valor = await fn();
-  cache.set(clave, { valor, expira: Date.now() + ttl });
-  return { ...valor, enCache: false };
+  if (hit && hit.expira > Date.now()) return hit.promesa.then((v) => ({ ...v, enCache: true }));
+
+  const promesa = fn();
+  cache.delete(clave);
+  cache.set(clave, { promesa, expira: Date.now() + ttl });
+  while (cache.size > MAX_CLAVES) cache.delete(cache.keys().next().value);
+  // Un error no se queda cacheado: la siguiente visita vuelve a intentarlo.
+  promesa.catch(() => {
+    if (cache.get(clave)?.promesa === promesa) cache.delete(clave);
+  });
+  return promesa.then((v) => ({ ...v, enCache: false }));
+}
+
+// Versión instalada enviada por el cliente: sólo hash corto, nada más.
+function leerVersion(searchParams) {
+  const v = searchParams.get("version") || "";
+  return /^[a-f0-9]{0,64}$/.test(v) ? v : "";
 }
 
 export async function GET(request) {
   const { searchParams, origin } = new URL(request.url);
-  const versionInstalada = searchParams.get("version") || "";
-  const max = Math.min(Math.max(Number(searchParams.get("max") || 20000), 1000), 40000);
+  const versionInstalada = leerVersion(searchParams);
   const cabeceras = { "cache-control": "no-store" };
 
   try {
@@ -67,8 +85,8 @@ export async function GET(request) {
 
     /* 2) Armar en vivo el resumen del mes más reciente (lo pide el botón) */
     if (searchParams.get("armar") === "1") {
-      const snapshot = await conCache(`snapshot:${max}`, async () => {
-        const s = await construirSnapshot(cliente, { maxRegistros: max });
+      const snapshot = await conCache("snapshot", async () => {
+        const s = await construirSnapshot(cliente, { maxRegistros: MAX_REGISTROS });
         return { ok: true, snapshot: s, resumen: resumir(s) };
       }, 6 * 60 * 60 * 1000);
 
@@ -97,7 +115,6 @@ export async function GET(request) {
       {
         ok: false,
         error: "El portal de datos abiertos no respondió",
-        detalle: String(error?.message || error),
         sugerencia: "La app sigue con las investigaciones ya instaladas en el dispositivo."
       },
       { status: 502, headers: cabeceras }

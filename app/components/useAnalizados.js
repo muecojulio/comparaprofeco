@@ -29,4 +29,3 @@ export function useAnalizados() {
   return { lista, listo };
 }
 
-export default useAnalizados;

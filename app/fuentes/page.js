@@ -56,7 +56,7 @@ export default function FuentesPage() {
       </OverflowRail>
       <div className="alert">
         Sitios oficiales: gob.mx/profeco y revistadelconsumidor.profeco.gob.mx.
-        También se consulta datos.gob.mx y Open Food Facts, sin quitar las ligas que ya tenía la app.
+        También se consulta datos.gob.mx (datos abiertos de Profeco).
       </div>
       <Accordion title="Precios al día (Quién es quién)">
         <InstalarInvestigaciones />

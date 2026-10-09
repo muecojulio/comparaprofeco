@@ -35,6 +35,7 @@ export default function Featured() {
   if (!item) return null;
 
   const ramo = getRamo(item.ramo);
+  const [colorA, colorB] = ramo?.colores || ["#c9a227", "#146c54"];
   const guardado = lista.some((g) => claveDe(g) === claveDe(item));
 
   // Al abrirlo queda guardado en su ramo y en su categoría (lib/analizados.js).
@@ -49,12 +50,13 @@ export default function Featured() {
 
   return (
     <Superficie
-      className="featured card-motion"
+      className="featured card-motion featured-viva"
+      style={{ "--acento": colorA, "--acento-2": colorB }}
       href={`/categoria/${item.categoriaId}`}
       onClick={guardarAlAbrir}
       data-guardado={guardado ? "si" : "no"}
     >
-      <div className="kicker">Producto analizado hoy</div>
+      <div className="kicker kicker-pill"><span className="punto-vivo" aria-hidden="true" />Producto analizado hoy</div>
       <h2>
         {item.producto.marca} · {item.producto.nombre}
       </h2>
